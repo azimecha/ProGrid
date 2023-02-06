@@ -60,6 +60,9 @@ namespace ProGrid.Common {
             Interop.ProcessInformation infNewProcess = new Interop.ProcessInformation();
             SystemProcess proCreated = new SystemProcess();
 
+            if (string.IsNullOrWhiteSpace(strWorkingDir))
+                strWorkingDir = null;
+
             try {
                 if (!Interop.Functions.CreateProcess(strAppName, strCmdLine, pProcessAttr, pThreadAttr, bInheritHandles, flagsCreation,
                     arrEnvironment, strWorkingDir, infStartup, out infNewProcess))

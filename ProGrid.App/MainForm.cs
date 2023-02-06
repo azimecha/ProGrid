@@ -148,8 +148,9 @@ namespace ProGrid.App {
             InfoTextBox.SelectionFont = InfoTextBox.Font;
             InfoTextBox.AppendText("\r\n");
 
+            bool bExited = false;
+
             if (infProcess.ProcessObject != null) {
-                bool bExited = false;
                 string strState;
 
                 try {
@@ -178,7 +179,7 @@ namespace ProGrid.App {
             InfoTextBox.AppendText("Executable path: " + (infProcess.ExecutablePath ?? "Unknown") + "\r\n\r\n");
             InfoTextBox.AppendText("Command line: " + (infProcess.CommandLine ?? "Unknown") + "\r\n\r\n");
 
-            if (infProcess.ProcessObject != null) {
+            if ((infProcess.ProcessObject != null) && !bExited) {
                 string strModulePath;
 
                 try {
