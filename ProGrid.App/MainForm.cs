@@ -76,6 +76,8 @@ namespace ProGrid.App {
                         ProcessTree.Nodes.Add(nodeNew);
                 } else {
                     nodeParent.Nodes.Add(nodeNew);
+                    if (nodeParent.Nodes.Count == 1)
+                        nodeParent.Expand();
                 }
 
                 return true;
@@ -91,6 +93,9 @@ namespace ProGrid.App {
             TreeNode nodeDead = TryFindProcessNode(infProcess.ID);
             if (nodeDead != null)
                 nodeDead.Text = "[DEAD] " + nodeDead.Text;
+
+            if (nodeDead.IsSelected)
+                OnProcessSelected(infProcess); // refresh info display
         }
 
         private void Monitor_ProcessCreated(IProcessCreationMonitor monitor, BasicProcessInfo infNewProcess)
@@ -120,5 +125,73 @@ namespace ProGrid.App {
 
             return null;
         }
+
+        private void ProcessTree_AfterSelect(object sender, TreeViewEventArgs e)
+            => OnProcessSelected(e.Node.Tag as BasicProcessInfo?);
+
+        private static readonly Font FONT_INFO_TITLE = new Font("Segoe UI Semibold", 24.0f);
+        private static readonly Font FONT_CODE = new Font("Courier New", 10.0f);
+
+        private void OnProcessSelected(BasicProcessInfo? infProcessMaybe) {
+            InfoTextBox.Clear();
+
+            if (infProcessMaybe is null) return;
+            BasicProcessInfo infProcess = infProcessMaybe.Value;
+
+            InfoTextBox.Select(0, 0);
+            InfoTextBox.SelectionFont = FONT_INFO_TITLE;
+            InfoTextBox.AppendText($"#{infProcess.ID} ");
+            InfoTextBox.AppendText(System.IO.Path.GetFileName(infProcess.ExecutablePath ?? "[UNKNOWN]"));
+            InfoTextBox.AppendText("\r\n");
+
+            InfoTextBox.Select(InfoTextBox.TextLength, 0);
+            InfoTextBox.SelectionFont = InfoTextBox.Font;
+            InfoTextBox.AppendText("\r\n");
+
+            if (infProcess.ProcessObject != null) {
+                bool bExited = false;
+                string strState;
+
+                try {
+                    bExited = infProcess.ProcessObject.HasExited;
+                    strState = bExited ? "Terminated" : "Running";
+                } catch (Exception exReadingState) {
+                    strState = FormatUnknownMessage(exReadingState);
+                }
+
+                InfoTextBox.AppendText($"State: {strState}\r\n\r\n");
+
+                if (bExited) {
+                    string strExitCode;
+
+                    try {
+                        strExitCode = infProcess.ProcessObject.ExitCode.ToString();
+                    } catch (Exception exReadingExitCode) {
+                        strExitCode = FormatUnknownMessage(exReadingExitCode);
+                    }
+
+                    InfoTextBox.AppendText($"Exit code: {strExitCode}\r\n\r\n");
+                }
+
+            }
+
+            InfoTextBox.AppendText("Executable path: " + (infProcess.ExecutablePath ?? "Unknown") + "\r\n\r\n");
+            InfoTextBox.AppendText("Command line: " + (infProcess.CommandLine ?? "Unknown") + "\r\n\r\n");
+
+            if (infProcess.ProcessObject != null) {
+                string strModulePath;
+
+                try {
+                    strModulePath = infProcess.ProcessObject.FilePath ?? "Unknown";
+                } catch (Exception exReadingPath) {
+                    strModulePath = FormatUnknownMessage(exReadingPath);
+                }
+
+                InfoTextBox.AppendText($"Full executable path: {strModulePath}\r\n\r\n");
+            }
+        }
+
+        private static string FormatUnknownMessage(Exception ex) 
+            => $"Unknown ({ex.GetType().FullName}: {ex.Message})";
     }
 }
